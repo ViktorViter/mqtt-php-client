@@ -1021,6 +1021,23 @@ class MqttClient implements ClientContract
     }
 
     /**
+     * @param $fp
+     * @param $string
+     * @param $length
+     * @return int
+     */
+    protected function fwriteStream($fp, $string, $length): int
+    {
+        for ($written = 0; $written < $length; $written += $fwrite) {
+            $fwrite = fwrite($fp, substr($string, $written));
+            if ($fwrite === false) {
+                return $written;
+            }
+        }
+        return $written;
+    }
+
+    /**
      * Writes some data to the socket. If a $length is given and it is shorter
      * than the data, only $length amount of bytes will be sent.
      *
@@ -1034,7 +1051,7 @@ class MqttClient implements ClientContract
         $calculatedLength = strlen($data);
         $length           = min($length ?? $calculatedLength, $calculatedLength);
 
-        $result = @fwrite($this->socket, $data, $length);
+        $result = @$this->fwriteStream($this->socket, $data, $length);
 
         if ($result === false || $result !== $length) {
             $this->logger->error('Sending data over the socket to the broker failed.');
